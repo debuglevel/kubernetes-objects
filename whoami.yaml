@@ -1,0 +1,153 @@
+# Add the kubernetes objects:
+#   kubectl apply -f whoami.yaml
+# List them again:
+#   kubectl get deployment,services,ingress -n whoamix
+# Also list all the other implicit stuff:
+#   kubectl get deployment,services,ingress,all -n whoamix
+# Edit our files:
+#   EDITOR=nano kubectl edit deployment,services,ingress -n whoamix
+# Edit a specific type:
+#   EDITOR=nano kubectl edit deployment whoami -n whoamix
+   
+
+---
+# Create a namespace where the stuff of our ahoami example will live in.
+# Not sure if this is a good practise for production though.
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: whoamix
+---
+# A deployment specifies the pod (a group of container which belong together)
+#   and how much replicas there should be.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: whoami
+  namespace: whoamix
+  labels:
+    # Labels can be used as selector.
+    app: traefiklabs
+    name: whoami
+spec:
+  # How much pods should there be?
+  replicas: 2
+  # Which pods should be managed by this deployment.
+  # These should just match the labels in the template below.
+  selector:
+    matchLabels:
+      app: traefiklabs
+      task: whoami
+  # The actual definition of the pod.
+  template:
+    metadata:
+      # Labels can be used as selector.
+      # A simple "app: whatever" selector seems to be quite common though. They are absolutely arbitraty, e.g. "apps", "application-ID", ... but should be consistent.
+      # But precise labels could easen things: e.g. defining the environment/stage (testing, production), the version, etc.
+      # There are also common labels which are kind of standardized: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
+      labels:
+        app: traefiklabs
+        task: whoami
+    spec:
+      containers:
+        - name: whoami
+          # Docker image to use.
+          # If this is updated, Kubernetes rolls out the new image by 
+          #  creating new pods and shutting down old pods one after another.
+          #  If there is no such image, it stops rolling out.
+          #  See also: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#updating-a-deployment
+          image: traefik/whoami:v1.7.1
+          ports:
+            - containerPort: 80
+---
+# A service opens up pod ports.
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami-clusterip
+  namespace: whoamix
+spec:
+  # Which ports to open.
+  ports:
+    - name: http
+      # The port the service should listen on.
+      port: 8001
+      # The port inside the pod.
+      # Would default to "port" if omitted (but should be stated for clarity)
+      targetPort: 80
+  # Select the pod.
+  selector:
+    app: traefiklabs
+    task: whoami
+  # ClusterIP (default) does something for inside the cluster.
+  # A request to http://<CLUSTER-IP>:80 inside the cluster will access the service.
+  type: ClusterIP
+---
+# A service opens up pod ports.
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami-loadbalancer
+  namespace: whoamix
+spec:
+  # Which ports to open.
+  ports:
+    - name: http
+      # The port the load balancer should listen on.
+      port: 8002
+      # The port inside the pod.
+      # Would default to "port" if omitted (but should be stated for clarity)
+      targetPort: 80
+  # Select the pod.
+  selector:
+    app: traefiklabs
+    task: whoami
+  # LoadBalancer can be used to open a port for the outside world.
+  # A request to http://192.168.0.126:8001 will access the service.
+  type: LoadBalancer
+---
+# An Ingress is a reverse-proxy thing.
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: whoami
+  namespace: whoamix
+  # Not sure if needed; and this would actually depend on the ingress implementation used.
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  # Define the rules on which the incoming requests should be routed.
+  rules:
+    - http:
+        paths:
+          # Route depending on the path
+          # A request to http://<SERVER_IP>/whoami/ will match this.
+          # CAVEAT: traefik (ingress used for k3s) behaviour seems not to match Kubernetes docs:
+          #   /whoami  -> matches /whoami/     and /whoami
+          #   /whoami/ -> matches /whoami/ but not /whoami
+          - path: /whoami
+            pathType: Prefix
+            backend:
+              service:
+                # Can point to a ClusterIP as well as a LoadBalancer service.
+                name: whoami-clusterip
+                # Select the port of the service (a service could have multiple)
+                port:
+                  # Select by port number (could also be by name)
+                  number: 8001
+
+    # Route depending on the host (is just omitted above and matches all hosts)
+    # A request to http://whoami.metis.sol.lan/ will match this.
+    - host: whoami.metis.sol.lan
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                # Can point to a ClusterIP as well as a LoadBalancer service.
+                name: whoami-loadbalancer
+                # Select the port of the service (a service could have multiple)
+                port:
+                  # Select by port number (could also be by name)
+                  number: 8002
