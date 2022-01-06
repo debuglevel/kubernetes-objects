@@ -75,8 +75,7 @@ spec:
       targetPort: 9376
   # Select the pod.
   selector:
-    app: traefiklabs
-    task: hostnames
+    app: hostnames
   # ClusterIP (default) does something for inside the cluster.
   # A request to http://<CLUSTER-IP>:8003 inside the cluster will access the service.
   type: ClusterIP
