@@ -11,7 +11,7 @@
    
 
 ---
-# Create a namespace where the stuff of our ahoami example will live in.
+# Create a namespace where the stuff of our example will live in.
 # Not sure if this is a good practise for production though.
 kind: Namespace
 apiVersion: v1
@@ -57,6 +57,7 @@ spec:
           #  If there is no such image, it stops rolling out.
           #  See also: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#updating-a-deployment
           image: traefik/whoami:v1.7.1
+          # Ports are only for documentation; they would be exposed even if not stated.
           ports:
             - containerPort: 80
 ---
@@ -103,7 +104,7 @@ spec:
     app: traefiklabs
     task: whoami
   # LoadBalancer can be used to open a port for the outside world.
-  # A request to http://192.168.0.126:8001 will access the service.
+  # A request to http://192.168.0.126:8002 will access the service.
   type: LoadBalancer
 ---
 # An Ingress is a reverse-proxy thing.
