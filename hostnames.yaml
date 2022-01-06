@@ -69,7 +69,7 @@ spec:
   ports:
     - name: http
       # The port the service should listen on.
-      port: 8001
+      port: 8003
       # The port inside the pod.
       # Would default to "port" if omitted (but should be stated for clarity)
       targetPort: 9376
@@ -78,7 +78,7 @@ spec:
     app: traefiklabs
     task: hostnames
   # ClusterIP (default) does something for inside the cluster.
-  # A request to http://<CLUSTER-IP>:80 inside the cluster will access the service.
+  # A request to http://<CLUSTER-IP>:8003 inside the cluster will access the service.
   type: ClusterIP
 ---
 # A service opens up pod ports.
@@ -92,7 +92,7 @@ spec:
   ports:
     - name: http
       # The port the load balancer should listen on.
-      port: 8002
+      port: 8004
       # The port inside the pod.
       # Would default to "port" if omitted (but should be stated for clarity)
       targetPort: 9376
@@ -100,7 +100,7 @@ spec:
   selector:
     app: hostnames
   # LoadBalancer can be used to open a port for the outside world.
-  # A request to http://192.168.0.126:8002 will access the service.
+  # A request to http://192.168.0.126:8004 or http://<CLUSTER-IP>:8004 will access the service.
   type: LoadBalancer
 ---
 # An Ingress is a reverse-proxy thing.
@@ -131,7 +131,7 @@ spec:
                 # Select the port of the service (a service could have multiple)
                 port:
                   # Select by port number (could also be by name)
-                  number: 8001
+                  number: 8003
 
     # Route depending on the host (is just omitted above and matches all hosts)
     # A request to http://hostnames.metis.sol.lan/ will match this.
@@ -147,4 +147,4 @@ spec:
                 # Select the port of the service (a service could have multiple)
                 port:
                   # Select by port number (could also be by name)
-                  number: 8002
+                  number: 8004

@@ -81,7 +81,7 @@ spec:
     app: traefiklabs
     task: whoami
   # ClusterIP (default) does something for inside the cluster.
-  # A request to http://<CLUSTER-IP>:80 inside the cluster will access the service.
+  # A request to http://<CLUSTER-IP>:8001 inside the cluster will access the service.
   type: ClusterIP
 ---
 # A service opens up pod ports.
@@ -104,7 +104,7 @@ spec:
     app: traefiklabs
     task: whoami
   # LoadBalancer can be used to open a port for the outside world.
-  # A request to http://192.168.0.126:8002 will access the service.
+  # A request to http://192.168.0.126:8002 or http://<CLUSTER-IP>:8002 will access the service.
   type: LoadBalancer
 ---
 # An Ingress is a reverse-proxy thing.
