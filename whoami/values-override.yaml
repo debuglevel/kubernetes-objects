@@ -1,0 +1,8 @@
+replicaCount: 3
+
+ingress:
+  hosts:
+    - host: whoamix.metis.sol.lan
+      paths:
+        - path: /
+          pathType: Prefix
